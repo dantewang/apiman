@@ -452,13 +452,28 @@ public class ApiMan {
 	private void writeToFile(
 			Map<String, Set<String>> map, String output) {
 
+		File outputFile = new File(output);
+
+		outputFile = outputFile.getAbsoluteFile();
+
+		File parentDir = outputFile.getParentFile();
+
+		if (!parentDir.exists()) {
+			if (!parentDir.mkdirs()) {
+				System.err.printf(
+					"Fail to create parent dir for %s.\n", output);
+
+				System.exit(1);
+			}
+		}
+
 		BufferedWriter out = null;
 
 		try {
-			out = new BufferedWriter(new FileWriter(output));
+			out = new BufferedWriter(new FileWriter(outputFile));
 		}
 		catch (IOException ioe) {
-			System.err.printf("Cannot open write: \n%s\n",
+			System.err.printf("Cannot open writer: \n%s\n",
 				ioe.getMessage());
 
 			System.exit(1);
