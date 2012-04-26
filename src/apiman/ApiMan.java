@@ -74,6 +74,8 @@ public class ApiMan {
 
 		String pattern = properties.getProperty(KEY_REGEXP);
 
+		String fileProtocol = properties.getProperty(KEY_FILE_PROTOCOL);
+
 		List<String> ignores = parseStringToList(
 			properties.getProperty(KEY_DIFF_IGNORE));
 
@@ -89,7 +91,7 @@ public class ApiMan {
 
 		Map<String, Set<String>> oldMap = generateApiMap(
 			properties.getProperty(KEY_OLD_JAR),
-			properties.getProperty(KEY_OLD_CP), pattern);
+			properties.getProperty(KEY_OLD_CP), pattern, fileProtocol);
 
 		System.out.printf("Write to %s.\n\n",
 			properties.getProperty(KEY_OLD_OUTPUT));
@@ -101,7 +103,7 @@ public class ApiMan {
 
 		Map<String, Set<String>> newMap = generateApiMap(
 			properties.getProperty(KEY_NEW_JAR), 
-			properties.getProperty(KEY_NEW_CP), pattern);
+			properties.getProperty(KEY_NEW_CP), pattern, fileProtocol);
 		
 		System.out.printf("Write to %s.\n\n",
 			properties.getProperty(KEY_NEW_OUTPUT));
@@ -125,14 +127,14 @@ public class ApiMan {
 	}
 
 	private Map<String, Set<String>> generateApiMap(
-			String jar, String classpath, String pattern) {
+			String jar, String classpath, String pattern, String fileProtocol) {
 
 		File jarFile = new File(jar);
 		File classpathFile = new File(classpath);
 
 		List<String> classpaths = parseClasspathXML(classpathFile);
 
-		URL[] urls = generateURLs(classpaths, jarFile);
+		URL[] urls = generateURLs(classpaths, jarFile, fileProtocol);
 
 		List<String> classNames = walkTree(jarFile, pattern);
 
@@ -191,16 +193,18 @@ public class ApiMan {
 		return diffMap;
 	}
 
-	private URL[] generateURLs(List<String> classpaths, File jarFile) {
+	private URL[] generateURLs(List<String> classpaths, File jarFile,
+			String fileProtocol) {
+
 		URL[] classpathURLs = new URL[classpaths.size() + 1];
 
 		try {
 			classpathURLs[0] =
-				new URL("jar:file://" + jarFile.getAbsolutePath() + "!/");
+				new URL(fileProtocol + jarFile.getAbsolutePath() + "!/");
 
 			for (int i = 1; i < classpathURLs.length; i++) {
 				classpathURLs[i] =
-					new URL("jar:file://" + classpaths.get(i - 1) + "!/");
+					new URL(fileProtocol + classpaths.get(i - 1) + "!/");
 			}
 		}
 		catch (MalformedURLException mue) {
@@ -532,5 +536,6 @@ public class ApiMan {
 	private final String KEY_DIFF_IGNORE = "diff.ignore";
 	private final String KEY_DIFF_IGNORE_CLASS = "diff.ignore.deleted.classes";
 	private final String KEY_DIFF_OUTPUT = "diff.output";
+	private final String KEY_FILE_PROTOCOL = "file.protocol";
 
 }
