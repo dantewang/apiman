@@ -55,6 +55,7 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class ApiMan {
 
+
 	private ApiMan() {
 		// private constructor
 	}
@@ -76,8 +77,11 @@ public class ApiMan {
 
 		String fileProtocol = properties.getProperty(KEY_FILE_PROTOCOL);
 
+		String delimiter = 
+			properties.getProperty(KEY_DIFF_IGNORE_DELIMITER);
+
 		List<String> ignores = parseStringToList(
-			properties.getProperty(KEY_DIFF_IGNORE));
+			properties.getProperty(KEY_DIFF_IGNORE), delimiter);
 
 		boolean ignoreDeletedClasses = Boolean.parseBoolean(
 			properties.getProperty(KEY_DIFF_IGNORE_CLASS));
@@ -171,8 +175,17 @@ public class ApiMan {
 
 			// TODO: contains is binary tree search
 			for (String value : oldValues) {
-				
-				if (ignores.contains(value)) {
+				//temp fix to avoid comma problem for methods in ignore list
+				boolean isIgnore = false;
+
+				for (String ignore : ignores) {
+					if (value.indexOf(ignore) != -1) {
+						isIgnore = true;
+						break;
+					}
+				}
+
+				if (isIgnore) {
 					continue;
 				}
 
@@ -287,7 +300,7 @@ public class ApiMan {
 		return classpaths;
 	}
 
-	private List<String> parseStringToList(String string) {
+	private List<String> parseStringToList(String string, String delimiter) {
 		int lastIndex = 0;
 		int index;
 		List<String> list = new ArrayList<String>();
@@ -296,11 +309,9 @@ public class ApiMan {
 			return list;
 		}
 
-		while (
-			(index = string.indexOf(",", lastIndex)) != -1) {
+		while ((index = string.indexOf(delimiter, lastIndex)) != -1) {
 
-			String item =
-				string.substring(lastIndex, index).trim();
+			String item = string.substring(lastIndex, index).trim();
 
 			if (item.length() > 0) {
 				list.add(item);
@@ -309,7 +320,7 @@ public class ApiMan {
 			lastIndex = index + 1;
 		}
 
-		// handle tail (the part in the string after the last comma)
+		// handle tail
 		String tail = null;
 
 		if (lastIndex == 0) {
@@ -319,7 +330,6 @@ public class ApiMan {
 			tail = string.substring(lastIndex).trim();
 		}
 		else {
-			// if there is a comma at the end of the string, ignore it.
 			return list;
 		}
 
@@ -533,6 +543,7 @@ public class ApiMan {
 	private final String KEY_NEW_CP = "new.classpath";
 	private final String KEY_NEW_OUTPUT = "new.output";
 	private final String KEY_REGEXP = "regexp";
+	private final String KEY_DIFF_IGNORE_DELIMITER = "diff.ignore.delimiter";
 	private final String KEY_DIFF_IGNORE = "diff.ignore";
 	private final String KEY_DIFF_IGNORE_CLASS = "diff.ignore.deleted.classes";
 	private final String KEY_DIFF_OUTPUT = "diff.output";
