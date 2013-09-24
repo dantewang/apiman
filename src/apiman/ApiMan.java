@@ -11,6 +11,7 @@
  * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
  * details.
  */
+
 package apiman;
 
 import java.io.BufferedReader;
@@ -19,15 +20,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -55,99 +54,100 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class ApiMan {
 
-
 	private ApiMan() {
 		// private constructor
 	}
 
 	public static ApiMan instance() {
-		return apiman;
+		return _apiman;
 	}
 
 	public void run(String propertiesFile) {
 		long start = System.nanoTime();
 
 		if (propertiesFile == null) {
-			propertiesFile = PROPERTIES_FILE;
+			propertiesFile = _PROPERTIES_FILE;
 		}
 
-		Properties properties = processProperties(propertiesFile);
+		Properties properties = _processProperties(propertiesFile);
 
-		String pattern = properties.getProperty(KEY_REGEXP);
+		String pattern = properties.getProperty(_KEY_REGEXP);
 
-		String fileProtocol = properties.getProperty(KEY_FILE_PROTOCOL);
+		String fileProtocol = properties.getProperty(_KEY_FILE_PROTOCOL);
 
 		String delimiter = 
-			properties.getProperty(KEY_DIFF_IGNORE_DELIMITER);
+			properties.getProperty(_KEY_DIFF_IGNORE_DELIMITER);
 
-		List<String> ignores = parseStringToList(
-			properties.getProperty(KEY_DIFF_IGNORE), delimiter);
+		List<String> ignores = _parseStringToList(
+			properties.getProperty(_KEY_DIFF_IGNORE), delimiter);
 
 		boolean ignoreDeletedClasses = Boolean.parseBoolean(
-			properties.getProperty(KEY_DIFF_IGNORE_CLASS));
+			properties.getProperty(_KEY_DIFF_IGNORE_CLASS));
 
 		for (String ignore : ignores) {
 			System.out.println(ignore);
 		}
 
-		System.out.printf("Processing %s\nThis may take several seconds.\n\n",
-			properties.getProperty(KEY_OLD_JAR));
+		System.out.printf(
+			"Processing %s\nThis may take several seconds.\n\n",
+			properties.getProperty(_KEY_OLD_JAR));
 
-		Map<String, Set<String>> oldMap = generateApiMap(
-			properties.getProperty(KEY_OLD_JAR),
-			properties.getProperty(KEY_OLD_CP), pattern, fileProtocol);
+		Map<String, Set<String>> oldMap = _generateApiMap(
+			properties.getProperty(_KEY_OLD_JAR),
+			properties.getProperty(_KEY_OLD_CP), pattern, fileProtocol);
 
-		System.out.printf("Write to %s.\n\n",
-			properties.getProperty(KEY_OLD_OUTPUT));
+		System.out.printf(
+			"Write to %s.\n\n", properties.getProperty(_KEY_OLD_OUTPUT));
 
-		writeToFile(oldMap, properties.getProperty(KEY_OLD_OUTPUT));
+		_writeToFile(oldMap, properties.getProperty(_KEY_OLD_OUTPUT));
 
-		System.out.printf("Processing %s\nThis may take several seconds.\n\n",
-			properties.getProperty(KEY_NEW_JAR));
+		System.out.printf(
+			"Processing %s\nThis may take several seconds.\n\n",
+			properties.getProperty(_KEY_NEW_JAR));
 
-		Map<String, Set<String>> newMap = generateApiMap(
-			properties.getProperty(KEY_NEW_JAR), 
-			properties.getProperty(KEY_NEW_CP), pattern, fileProtocol);
+		Map<String, Set<String>> newMap = _generateApiMap(
+			properties.getProperty(_KEY_NEW_JAR), 
+			properties.getProperty(_KEY_NEW_CP), pattern, fileProtocol);
 		
-		System.out.printf("Write to %s.\n\n",
-			properties.getProperty(KEY_NEW_OUTPUT));
+		System.out.printf(
+			"Write to %s.\n\n", properties.getProperty(_KEY_NEW_OUTPUT));
 
-		writeToFile(newMap, properties.getProperty(KEY_NEW_OUTPUT));
+		_writeToFile(newMap, properties.getProperty(_KEY_NEW_OUTPUT));
 
 		System.out.printf("Generate deleted method list...\n\n");
 
-		Map<String, Set<String>> diffMap = generateDiffMap(
+		Map<String, Set<String>> diffMap = _generateDiffMap(
 			oldMap, newMap, ignores, ignoreDeletedClasses);
 
-		System.out.printf("Write to %s.\n\n",
-			properties.getProperty(KEY_DIFF_OUTPUT));
+		System.out.printf(
+			"Write to %s.\n\n", properties.getProperty(_KEY_DIFF_OUTPUT));
 
-		writeToFile(diffMap, properties.getProperty(KEY_DIFF_OUTPUT));
+		_writeToFile(diffMap, properties.getProperty(_KEY_DIFF_OUTPUT));
 
 		long time = System.nanoTime() - start;
 
-		System.out.printf("Generation finished successfully in %d ms%n.",
-			time / 1000000);
+		System.out.printf(
+			"Generation finished successfully in %d ms%n.", time / 1000000);
 	}
 
-	private Map<String, Set<String>> generateApiMap(
-			String jar, String classpath, String pattern, String fileProtocol) {
+	private Map<String, Set<String>> _generateApiMap(
+		String jar, String classpath, String pattern, String fileProtocol) {
 
 		File jarFile = new File(jar);
 		File classpathFile = new File(classpath);
 
-		List<String> classpaths = parseClasspathXML(classpathFile);
+		List<String> classpaths = _parseClasspathXML(classpathFile);
 
-		URL[] urls = generateURLs(classpaths, jarFile, fileProtocol);
+		URL[] urls = _generateURLs(classpaths, jarFile, fileProtocol);
 
-		List<String> classNames = walkTree(jarFile, pattern);
+		List<String> classNames = _walkTree(jarFile, pattern);
 
-		return processClasses(urls, classNames);
+		return _processClasses(urls, classNames);
 	}
 
-	private Map<String, Set<String>> generateDiffMap(
-			Map<String, Set<String>> oldMap, Map<String, Set<String>> newMap,
-			List<String> ignores, boolean ignoreDeletedClasses) {
+	private Map<String, Set<String>> _generateDiffMap(
+		Map<String, Set<String>> oldMap, Map<String, Set<String>> newMap,
+		List<String> ignores, boolean ignoreDeletedClasses) {
 
 		Map<String, Set<String>> diffMap = new TreeMap<String, Set<String>>();
 
@@ -206,8 +206,8 @@ public class ApiMan {
 		return diffMap;
 	}
 
-	private URL[] generateURLs(List<String> classpaths, File jarFile,
-			String fileProtocol) {
+	private URL[] _generateURLs(
+		List<String> classpaths, File jarFile, String fileProtocol) {
 
 		URL[] classpathURLs = new URL[classpaths.size() + 1];
 
@@ -231,7 +231,7 @@ public class ApiMan {
 	}
 
 	// parse .classpath file using SAX
-	private List<String> parseClasspathXML(File dotClasspathFile) {
+	private List<String> _parseClasspathXML(File dotClasspathFile) {
 		final List<String> classpaths = new ArrayList<String>();
 
 		final String baseDir =
@@ -300,14 +300,19 @@ public class ApiMan {
 		return classpaths;
 	}
 
-	private List<String> parseStringToList(String string, String delimiter) {
+	private List<String> _parseStringToList(
+		String string, String delimiter) {
+
 		int lastIndex = 0;
 		int index;
-		List<String> list = new ArrayList<String>();
+
+		List<String> list = Collections.EMPTY_LIST;
 
 		if (string == null || string.isEmpty()) {
 			return list;
 		}
+
+		list = new ArrayList<String>();
 
 		while ((index = string.indexOf(delimiter, lastIndex)) != -1) {
 
@@ -339,8 +344,8 @@ public class ApiMan {
 	}
 
 	// load classes and list methods
-	private Map<String, Set<String>> processClasses(
-			URL[] urls, List<String> classNames) {
+	private Map<String, Set<String>> _processClasses(
+		URL[] urls, List<String> classNames) {
 
 		// Load class
 		ClassLoader clazzLoader = new URLClassLoader(urls);
@@ -380,7 +385,7 @@ public class ApiMan {
 		return apiMap;
 	}
 
-	private Properties processProperties(String propertiesFile) {
+	private Properties _processProperties(String propertiesFile) {
 		File file = new File(propertiesFile);
 		file = file.getAbsoluteFile();
 
@@ -402,7 +407,7 @@ public class ApiMan {
 	}
 
 	// iterate through the jar file and get class list
-	private List<String> walkTree(File file, String patternStr) {
+	private List<String> _walkTree(File file, String patternStr) {
 		List<String> classNames = new ArrayList<String>();
 
 		Pattern pattern = Pattern.compile(patternStr);
@@ -463,8 +468,8 @@ public class ApiMan {
 		return classNames;
 	}
 
-	private void writeToFile(
-			Map<String, Set<String>> map, String output) {
+	private void _writeToFile(
+		Map<String, Set<String>> map, String output) {
 
 		File outputFile = new File(output);
 
@@ -532,21 +537,27 @@ public class ApiMan {
 		}
 	}
 
-	private static ApiMan apiman = new ApiMan();
+	private static final ApiMan _apiman = new ApiMan();
 
-	private final String PROPERTIES_FILE = 
-		"apiman.properties";
-	private final String KEY_OLD_JAR = "old.jar";
-	private final String KEY_OLD_CP = "old.classpath";
-	private final String KEY_OLD_OUTPUT = "old.output";
-	private final String KEY_NEW_JAR = "new.jar";
-	private final String KEY_NEW_CP = "new.classpath";
-	private final String KEY_NEW_OUTPUT = "new.output";
-	private final String KEY_REGEXP = "regexp";
-	private final String KEY_DIFF_IGNORE_DELIMITER = "diff.ignore.delimiter";
-	private final String KEY_DIFF_IGNORE = "diff.ignore";
-	private final String KEY_DIFF_IGNORE_CLASS = "diff.ignore.deleted.classes";
-	private final String KEY_DIFF_OUTPUT = "diff.output";
-	private final String KEY_FILE_PROTOCOL = "file.protocol";
+	private static final String _PROPERTIES_FILE = "apiman.properties";
+
+	private static final String _KEY_OLD_JAR = "old.jar";
+	private static final String _KEY_OLD_CP = "old.classpath";
+	private static final String _KEY_OLD_OUTPUT = "old.output";
+
+	private static final String _KEY_NEW_JAR = "new.jar";
+	private static final String _KEY_NEW_CP = "new.classpath";
+	private static final String _KEY_NEW_OUTPUT = "new.output";
+
+	private static final String _KEY_REGEXP = "regexp";
+
+	private static final String _KEY_DIFF_IGNORE_DELIMITER =
+		"diff.ignore.delimiter";
+	private static final String _KEY_DIFF_IGNORE = "diff.ignore";
+	private static final String _KEY_DIFF_IGNORE_CLASS =
+		"diff.ignore.deleted.classes";
+	private static final String _KEY_DIFF_OUTPUT = "diff.output";
+	
+	private static final String _KEY_FILE_PROTOCOL = "file.protocol";
 
 }
